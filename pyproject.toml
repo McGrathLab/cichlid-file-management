@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cichlid-file-management"
+version = "0.1.0"
+description = "Shared project-data utilities (FileManager, LogParser) for the McGrath lab cichlid pipeline"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Patrick McGrath" }]
+dependencies = [
+    "pandas",
+]
+
+[project.urls]
+Repository = "https://github.com/McGrathLab/cichlid-file-management"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cichlid_file_management"]

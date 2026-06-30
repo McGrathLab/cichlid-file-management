@@ -19,6 +19,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from types import SimpleNamespace
+import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,32 @@ class BaseFileManager(ABC):
             return self._UTAKA_STORAGE.rstrip('/') + '/' + os.getenv('USER') + '/Temp/' + projectData + '/'
         self.system = 'other'
         return os.getenv('HOME').rstrip('/') + '/Temp/' + projectData + '/'
+    def _detect_branch_name(self):
+        """Git branch of the repo defining the concrete FileManager subclass.
 
+        Uses the subclass's source location (not the CWD), so each repo records its
+        own branch regardless of where the process was launched. Falls back
+        gracefully when git or a .git dir isn't present (e.g. a non-editable install).
+        """
+        try:
+            repo_dir = os.path.dirname(os.path.abspath(inspect.getfile(type(self))))
+            out = subprocess.run(
+                ["git", "-C", repo_dir, "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True, text=True,
+            )
+            branch = out.stdout.strip()
+            if out.returncode != 0 or not branch:
+                return "unknown"
+            if branch == "HEAD":  # detached checkout -> record the short commit
+                sha = subprocess.run(
+                    ["git", "-C", repo_dir, "rev-parse", "--short", "HEAD"],
+                    capture_output=True, text=True,
+                ).stdout.strip()
+                return f"detached@{sha}" if sha else "unknown"
+            return branch
+        except (FileNotFoundError, OSError, TypeError):
+            return "unknown"
+            
     @staticmethod
     def _isRaspberryPi():
         node = platform.node()
